@@ -241,3 +241,44 @@ nyc_airbnb |>
   knitr::kable(digits = 2)
 ```
 
+## Homicides in Baltimore
+
+```{r}
+# disposition == "Closed by arrest") results in true or false. Using as.numeric in front of it converts it to 1 if true and 0 if false 
+baltimore_df = 
+  read_csv("data/homicide-data.csv") |> 
+  filter(city == "Baltimore") |> 
+  mutate(
+    resolved = as.numeric(disposition == "Closed by arrest"),
+    victim_age = as.numeric(victim_age)
+  ) |> 
+  select(resolved, victim_age, victim_race, victim_sex)
+```
+
+
+fitting a logistic regression
+
+```{r}
+fit_logistic = 
+  baltimore_df |> 
+  glm(
+    resolved ~ victim_age + victim_race + victim_sex, 
+    data = _, 
+    family = binomial())
+```
+
+look at model results
+
+```{r}
+fit_logistic |> 
+  broom::tidy() |> 
+  mutate(OR = exp(estimate)) |> 
+  select(term, estimate, OR)
+```
+
+
+```{r}
+baltimore_df |> 
+  count(victim_race)
+```
+
