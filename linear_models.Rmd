@@ -183,5 +183,61 @@ anova(fit_null, fit_alternative) |>
   broom::tidy() 
 ```
 
+## Borough-level differences
 
+```{r}
+fit = 
+  nyc_airbnb |> 
+  lm(price ~ stars * borough + room_type * borough, data = _) #asking whether or not price depends on stars and room type in this data set but want to allow  the effect of stars to vary by boroughs and the effect of room type vary by borough
+
+fit |> 
+  broom::tidy() # this gives you all the estimates and p-values
+```
+
+
+
+```{r}
+#for exploratory analyses, you can fit a separate linear model for each borough and look at the slope of stars
+
+airbnb_lm = function(df) {
+  lm(price ~ stars + room_type, data = df)
+}
+
+#nest everything except for borough mutate( #fit a linear model for each borough; models column is going to map across the dataframe column and im going to fit a linear model that goes along with that
+nyc_airbnb |> 
+  nest(df = -borough) |> 
+  mutate(
+    models = map(df, airbnb_lm),
+    results = map(models, broom::tidy)    
+  ) |> 
+  select(borough, results) |> 
+  unnest(results) |> 
+  select(borough, term,  estimate) |> 
+  pivot_wider(
+    names_from = term,
+    values_from = estimate
+  ) |> 
+  knitr::kable(digits = 2)
+```
+
+same thing but just a little different
+
+```{r}
+# \() anonymous function
+
+nyc_airbnb |> 
+  nest(df = -borough) |>  
+    mutate(
+      models = map(df, \(df) lm(price ~ stars + room_type, data = df)),
+      results = map(models, broom::tidy)
+  ) |> 
+  select(borough, results) |> 
+  unnest(results) |> 
+  select(borough, term, estimate) |> 
+  pivot_wider(
+    names_from = term,
+    values_from = estimate
+  ) |> 
+  knitr::kable(digits = 2)
+```
 
