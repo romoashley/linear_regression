@@ -7,6 +7,7 @@ Load key packages.
 
 ``` r
 library(tidyverse)
+library(p8105.datasets)
 library(modelr)
 
 set.seed(1)
@@ -226,3 +227,64 @@ boot_results |>
     ##   <chr>          <dbl>    <dbl>
     ## 1 (Intercept)     1.79     1.79
     ## 2 x               2.91     2.91
+
+## Airbnb
+
+``` r
+data("nyc_airbnb")
+
+nyc_airbnb =
+  nyc_airbnb |> 
+  mutate(stars = review_scores_location/2) |> 
+  rename(
+    borough = neighbourhood_group
+  ) |> 
+  filter(borough != "Staten Island") |> 
+  drop_na(price, stars) |> 
+  select(price, stars, room_type, borough)
+```
+
+let’s fit a regression of ‘price’ on other variables and look at
+residuals
+
+``` r
+airbnb_fit = 
+  nyc_airbnb |> 
+  lm(price ~ stars + room_type + borough, data = _)
+```
+
+residuals !
+
+``` r
+nyc_airbnb |> 
+  modelr::add_residuals(airbnb_fit) |> 
+  ggplot(aes(x = stars, y = resid)) +
+  geom_point()
+```
+
+<img src="bootstrapping_files/figure-gfm/unnamed-chunk-14-1.png" width="90%" />
+
+run a bootstrap on this whole thing to get estimats for the effect of
+‘stars’ on ‘price’
+
+``` r
+manhattan_df = 
+  nyc_airbnb |> 
+  filter(borough == "Manhattan")
+boot_results = 
+  tibble(strap_number = 1:1000) |> 
+  mutate(
+    strap_sample = map(strap_number, \(i) boot_sample(manhattan_df)),
+    models = map(strap_sample, \(df) lm(price ~ stars + room_type, data = df)),
+    results = map(models, broom::tidy)
+  ) |> 
+  select(strap_number, results) |> 
+  unnest(results)
+
+boot_results |> 
+  filter(term == "stars") |> 
+  ggplot(aes(x = estimate)) +
+  geom_density()
+```
+
+<img src="bootstrapping_files/figure-gfm/unnamed-chunk-15-1.png" width="90%" />
