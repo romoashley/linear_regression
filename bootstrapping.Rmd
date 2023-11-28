@@ -81,7 +81,24 @@ sim_df_nonconst |>
 # we need to do in the setting of nonconstant variance is deal with it in a way that allows us to get accurate confidence intervals despite the fact that the generating process is not what we assumed theoretically
 ```
 
+## Draw and analyze a bootstrap sample
 
+Start with a little function
+```{r}
+boot_sample = function(df) {
+  
+  sample_frac(df, replace = TRUE)
+}
+```
+
+Let's see how this works
+```{r}
+sim_df_nonconst |> 
+  boot_sample() |> 
+  ggplot(aes(x = x, y = y)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm")
+```
 
 
 

@@ -78,3 +78,28 @@ sim_df_nonconst |>
 # lm assumes the assumptions of linear regression: aka that there is constant variance across the domain even when the data truly does not have constant variance 
 # we need to do in the setting of nonconstant variance is deal with it in a way that allows us to get accurate confidence intervals despite the fact that the generating process is not what we assumed theoretically
 ```
+
+## Draw and analyze a bootstrap sample
+
+Start with a little function
+
+``` r
+boot_sample = function(df) {
+  
+  sample_frac(df, replace = TRUE)
+}
+```
+
+Let’s see how this works
+
+``` r
+sim_df_nonconst |> 
+  boot_sample() |> 
+  ggplot(aes(x = x, y = y)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm")
+```
+
+    ## `geom_smooth()` using formula = 'y ~ x'
+
+<img src="bootstrapping_files/figure-gfm/unnamed-chunk-6-1.png" width="90%" />
