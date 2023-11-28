@@ -100,6 +100,80 @@ sim_df_nonconst |>
   stat_smooth(method = "lm")
 ```
 
+## Draw a lot of samples and analyze them 
+```{r}
+# 100 boostraps, fit a linear model to those, take a the estimated intercept and slopes for each of those, and look at the distribution of those 
+
+# for each iteration of i in strap number, run boot_sample function on sim_df_nonconst
+
+boot_straps = 
+  tibble(strap_number = 1:1000) |> 
+  mutate(
+    strap_sample = map(strap_number, \(i) boot_sample(sim_df_nonconst)))
+
+
+#sample to sample variability (different bootstrap sample each time you do it)
+boot_straps |> 
+  pull(strap_sample) |> 
+  nth(1) |> 
+  arrange(x)
+
+boot_straps |> 
+  pull(strap_sample) |> 
+  nth(2) |> 
+  arrange(x)
+```
+
+Now we do the 'lm' fit
+
+```{r}
+boot_results = 
+  boot_straps |> 
+  mutate(
+    models = map(strap_sample, \(df) lm(y ~ x, data = df)),
+    results = map(models, broom::tidy)
+  ) |> 
+  select(strap_number, results) |> 
+  unnest(results)
+```
+
+Try to summarize these results = get a bootstrap
+
+```{r}
+#standard error of an estimate is the standard deviation of that estimate across repeated samples
+
+#compute the standard deviation of the estimated coefficients
+boot_results |> 
+  group_by(term) |> 
+  summarize(
+    se = sd(estimate)
+  )
+#in a bootstrap, you should have less variability on the intercept and more variability in the slope comparied to the sim_df_nonconst
+```
+
+
+look at distribution 
+```{r}
+boot_results |> 
+  filter(term == "x") |> 
+  ggplot(aes(x=estimate)) +
+  geom_density()
+```
+
+can I construct a CI
+
+```{r}
+#need more bootstrap samples to construct confidence intervals than to construct a se
+
+boot_results |> 
+  group_by(term) |> 
+  summarize(
+    ci_lower = quantile(estimate, 0.025),
+    ci_upper = quantile(estimate, 0.025)
+  )
+```
+
+
 
 
 
